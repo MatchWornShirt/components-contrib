@@ -730,33 +730,22 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	if err != nil {
 		return fmt.Errorf("error getting queue attributes: %w", err)
 	}
-
-	newStatement := &statement{
-		Effect:    "Allow",
-		Principal: principal{Service: "sns.amazonaws.com"},
-		Action:    "sqs:SendMessage",
-		Resource:  sqsQueueInfo.arn,
-		Condition: condition{
-			ArnEquals: arnEquals{
-				AwsSourceArn: snsARN,
-			},
-		},
-	}
-
+	s.logger.Infof("Generating policy")
 	policy := &policy{Version: "2012-10-17"}
 	if policyStr, ok := getQueueAttributesOutput.Attributes[sqs.QueueAttributeNamePolicy]; ok {
 		// look for the current statement if exists, else add it and store.
 		if err = json.Unmarshal([]byte(*policyStr), policy); err != nil {
 			return fmt.Errorf("error unmarshalling sqs policy: %w", err)
 		}
-		if policy.statementExists(newStatement) {
-			// nothing to do.
+		conditionExists := policy.tryInsertCondition(sqsQueueInfo.arn, snsARN)
+		if conditionExists {
 			return nil
 		}
 	}
 
-	policy.addStatement(newStatement)
 	b, uerr := json.Marshal(policy)
+	s.logger.Infof("Generated policy")
+	s.logger.Infof(string(b))
 	if uerr != nil {
 		return fmt.Errorf("failed serializing new sqs policy: %w", uerr)
 	}
