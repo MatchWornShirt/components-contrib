@@ -732,7 +732,11 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	}
 	s.logger.Infof("Generating policy")
 	policy := &policy{Version: "2012-10-17"}
-	if policyStr, ok := getQueueAttributesOutput.Attributes[sqs.QueueAttributeNamePolicy]; ok {
+	s.logger.Errorf(getQueueAttributesOutput.String())
+	policyStr, ok := getQueueAttributesOutput.Attributes[sqs.QueueAttributeNamePolicy]
+	s.logger.Errorf("getQueueAttributesOutput %s", ok)
+	s.logger.Errorf("getQueueAttributesOutput str %s", policyStr)
+	if ok {
 		// look for the current statement if exists, else add it and store.
 		if err = json.Unmarshal([]byte(*policyStr), policy); err != nil {
 			return fmt.Errorf("fuck error unmarshalling sqs policy: %w", err)
@@ -744,8 +748,8 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	}
 
 	b, uerr := json.Marshal(policy)
-	policyStr := string(b)
-	s.logger.Errorf(policyStr)
+	policyStr2 := string(b)
+	s.logger.Errorf(policyStr2)
 	if uerr != nil {
 		return fmt.Errorf("fuck failed serializing new sqs policy: %w", uerr)
 	}
@@ -753,7 +757,7 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	ctx, cancelFn = context.WithTimeout(parentCtx, s.opsTimeout)
 	_, err = s.sqsClient.SetQueueAttributesWithContext(ctx, &(sqs.SetQueueAttributesInput{
 		Attributes: map[string]*string{
-			"Policy": aws.String(policyStr),
+			"Policy": aws.String(policyStr2),
 		},
 		QueueUrl: &sqsQueueInfo.url,
 	}))
