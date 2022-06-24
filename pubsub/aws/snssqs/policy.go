@@ -54,7 +54,7 @@ func (p *policy) tryInsertCondition(sqsArn string, snsArn string) bool {
 		}
 	}
 	// insert a new statement if no statement for the sqsArn
-	newStatement := &statement{
+	newStatement := statement{
 		Effect:    "Allow",
 		Principal: principal{Service: "sns.amazonaws.com"},
 		Action:    "sqs:SendMessage",
@@ -65,6 +65,6 @@ func (p *policy) tryInsertCondition(sqsArn string, snsArn string) bool {
 			},
 		},
 	}
-	p.Statement = append(p.Statement, *newStatement)
+	p.Statement = append(p.Statement, newStatement)
 	return false
 }
