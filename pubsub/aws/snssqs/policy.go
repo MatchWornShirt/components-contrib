@@ -39,7 +39,7 @@ type policy struct {
 }
 
 func (p *policy) tryInsertCondition(sqsArn string, snsArn string) bool {
-	for _, s := range p.Statement {
+	for i, s := range p.Statement {
 		// if there is a statement for sqsArn
 		if s.Resource == sqsArn {
 			// check if the snsArn already exists
@@ -49,7 +49,7 @@ func (p *policy) tryInsertCondition(sqsArn string, snsArn string) bool {
 				}
 			}
 			// insert it if it does not exist
-			s.Condition.ForAllValuesArnEquals.AwsSourceArn = append(s.Condition.ForAllValuesArnEquals.AwsSourceArn, snsArn)
+			p.Statement[i].Condition.ForAllValuesArnEquals.AwsSourceArn = append(s.Condition.ForAllValuesArnEquals.AwsSourceArn, snsArn)
 			return false
 		}
 	}
