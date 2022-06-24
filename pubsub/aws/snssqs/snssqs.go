@@ -616,9 +616,9 @@ func (s *snsSqs) consumeSubscription(ctx context.Context, queueInfo, deadLetters
 			if err == context.Canceled || err == context.DeadlineExceeded {
 				s.logger.Warn("context canceled; stopping consuming from queue arn: %v", queueInfo.arn)
 			} else if awsErr, ok := err.(awserr.Error); ok {
-				s.logger.Errorf("AWS operation error while consuming from queue arn: %v with error: %w. retrying...", queueInfo.arn, awsErr.Error())
+				s.logger.Errorf("fuck AWS operation error while consuming from queue arn: %v with error: %w. retrying...", queueInfo.arn, awsErr.Error())
 			} else {
-				s.logger.Errorf("error consuming from queue arn: %v with error: %w. retrying...", queueInfo.arn, err)
+				s.logger.Errorf("fuck error consuming from queue arn: %v with error: %w. retrying...", queueInfo.arn, err)
 			}
 			time.Sleep(sqsPullExponentialBackoff.NextBackOff())
 
@@ -636,13 +636,13 @@ func (s *snsSqs) consumeSubscription(ctx context.Context, queueInfo, deadLetters
 		var wg sync.WaitGroup
 		for _, message := range messageResponse.Messages {
 			if err := s.validateMessage(ctx, message, queueInfo, deadLettersQueueInfo); err != nil {
-				s.logger.Errorf("message is not valid for further processing by the handler. error is: %v", err)
+				s.logger.Errorf("fuck message is not valid for further processing by the handler. error is: %v", err)
 				continue
 			}
 
 			f := func(message *sqs.Message) {
 				if err := s.callHandler(ctx, message, queueInfo); err != nil {
-					s.logger.Errorf("error while handling received message. error is: %v", err)
+					s.logger.Errorf("fuck error while handling received message. error is: %v", err)
 				}
 
 				wg.Done()
@@ -735,7 +735,7 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	if policyStr, ok := getQueueAttributesOutput.Attributes[sqs.QueueAttributeNamePolicy]; ok {
 		// look for the current statement if exists, else add it and store.
 		if err = json.Unmarshal([]byte(*policyStr), policy); err != nil {
-			return fmt.Errorf("error unmarshalling sqs policy: %w", err)
+			return fmt.Errorf("fuck error unmarshalling sqs policy: %w", err)
 		}
 		conditionExists := policy.tryInsertCondition(sqsQueueInfo.arn, snsARN)
 		if conditionExists {
@@ -744,22 +744,22 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	}
 
 	b, uerr := json.Marshal(policy)
-	s.logger.Infof("Generated policy")
-	s.logger.Infof(string(b))
+	policyStr := string(b)
+	s.logger.Errorf(policyStr)
 	if uerr != nil {
-		return fmt.Errorf("failed serializing new sqs policy: %w", uerr)
+		return fmt.Errorf("fuck failed serializing new sqs policy: %w", uerr)
 	}
 
 	ctx, cancelFn = context.WithTimeout(parentCtx, s.opsTimeout)
 	_, err = s.sqsClient.SetQueueAttributesWithContext(ctx, &(sqs.SetQueueAttributesInput{
 		Attributes: map[string]*string{
-			"Policy": aws.String(string(b)),
+			"Policy": aws.String(policyStr),
 		},
 		QueueUrl: &sqsQueueInfo.url,
 	}))
 	cancelFn()
 	if err != nil {
-		return fmt.Errorf("error setting queue subscription policy: %w", err)
+		return fmt.Errorf("fuck the error setting queue subscription policy: %s, %w", policyStr, err)
 	}
 
 	return nil
