@@ -737,15 +737,16 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 		if err = json.Unmarshal([]byte(*policyStr), policy); err != nil {
 			return fmt.Errorf("fuck error unmarshalling sqs policy: %w", err)
 		}
-		conditionExists := policy.tryInsertCondition(sqsQueueInfo.arn, snsARN)
-		if conditionExists {
-			return nil
-		}
+	}
+	s.logger.Errorf("Inserting sqs &s sns &s", sqsQueueInfo.arn, snsARN)
+	conditionExists := policy.tryInsertCondition(sqsQueueInfo.arn, snsARN)
+	if conditionExists {
+		s.logger.Errorf("sqs %s sns %s already exists", sqsQueueInfo.arn, snsARN)
+		return nil
 	}
 
 	b, uerr := json.Marshal(policy)
 	policyStr2 := string(b)
-	s.logger.Errorf(policyStr2)
 	if uerr != nil {
 		return fmt.Errorf("fuck failed serializing new sqs policy: %w", uerr)
 	}
