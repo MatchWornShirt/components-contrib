@@ -730,12 +730,8 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	if err != nil {
 		return fmt.Errorf("error getting queue attributes: %w", err)
 	}
-	s.logger.Infof("Generating policy")
 	policy := &policy{Version: "2012-10-17"}
-	s.logger.Errorf(getQueueAttributesOutput.String())
 	policyStr, ok := getQueueAttributesOutput.Attributes[sqs.QueueAttributeNamePolicy]
-	s.logger.Errorf("getQueueAttributesOutput %s", ok)
-	s.logger.Errorf("getQueueAttributesOutput str %s", policyStr)
 	if ok {
 		// look for the current statement if exists, else add it and store.
 		if err = json.Unmarshal([]byte(*policyStr), policy); err != nil {
@@ -763,7 +759,7 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	}))
 	cancelFn()
 	if err != nil {
-		return fmt.Errorf("fuck the error setting queue subscription policy: %s, %w", policyStr, err)
+		return fmt.Errorf("fuck the error setting queue subscription policy: %s, %w", *policyStr, err)
 	}
 
 	return nil

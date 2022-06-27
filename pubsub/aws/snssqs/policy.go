@@ -13,8 +13,40 @@ limitations under the License.
 
 package snssqs
 
+import (
+	"encoding/json"
+	"reflect"
+)
+
 type arnEquals struct {
 	AwsSourceArn []string `json:"aws:SourceArn"`
+}
+
+func (c *arnEquals) UnmarshalJSON(data []byte) error {
+	var nums interface{}
+	err := json.Unmarshal(data, &nums)
+	if err != nil {
+		return err
+	}
+
+	items := reflect.ValueOf(nums)
+	switch items.Kind() {
+	case reflect.String:
+		c.AwsSourceArn = append(c.AwsSourceArn, items.String())
+
+	case reflect.Slice:
+		c.AwsSourceArn = make([]string, 0, items.Len())
+		for i := 0; i < items.Len(); i++ {
+			item := items.Index(i)
+			switch item.Kind() {
+			case reflect.String:
+				c.AwsSourceArn = append(c.AwsSourceArn, item.String())
+			case reflect.Interface:
+				c.AwsSourceArn = append(c.AwsSourceArn, item.Interface().(string))
+			}
+		}
+	}
+	return nil
 }
 
 type condition struct {
