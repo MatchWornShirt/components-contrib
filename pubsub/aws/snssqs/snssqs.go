@@ -857,7 +857,7 @@ func (s *snsSqs) Subscribe(subscribeCtx context.Context, req pubsub.SubscribeReq
 
 		// Remove the handler
 		delete(s.topicHandlers, sanitizedName)
-
+		s.logger.Debugf("Deleting topic %s of arn %s queue: %s", sanitizedName, subscriptionArn, queueInfo.arn)
 		// If we can perform management operations, remove the subscription entirely
 		if !s.metadata.disableEntityManagement {
 			// Use a background context because subscribeCtx is canceled already
