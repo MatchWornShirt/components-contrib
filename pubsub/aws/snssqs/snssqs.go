@@ -760,7 +760,7 @@ func (s *snsSqs) restrictQueuePublishPolicyToOnlySNS(parentCtx context.Context, 
 	}))
 	cancelFn()
 	if err != nil {
-		return fmt.Errorf("fuck the error setting queue subscription policy: %s, %w", *policyStr, err)
+		return fmt.Errorf("fuck the error setting queue subscription policy: %s, %w", *policyStr2, err)
 	}
 
 	return nil
