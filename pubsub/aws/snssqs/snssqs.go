@@ -862,7 +862,7 @@ func (s *snsSqs) Subscribe(subscribeCtx context.Context, req pubsub.SubscribeReq
 		if !s.metadata.disableEntityManagement {
 			// Use a background context because subscribeCtx is canceled already
 			// Error is logged already
-			_ = s.removeSnsSqsSubscription(s.ctx, subscriptionArn)
+			//_ = s.removeSnsSqsSubscription(s.ctx, subscriptionArn)
 		}
 
 		// If we don't have any topic left, close the poller
