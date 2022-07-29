@@ -17,20 +17,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sts"
-
 	"github.com/dapr/kit/retry"
-
+	"github.com/getsentry/sentry-go"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	aws_auth "github.com/dapr/components-contrib/internal/authentication/aws"
 	"github.com/dapr/components-contrib/pubsub"
@@ -148,6 +146,21 @@ func nameToAWSSanitizedName(name string, isFifo bool) string {
 }
 
 func (s *snsSqs) Init(metadata pubsub.Metadata) error {
+	err := sentry.Init(sentry.ClientOptions{
+		// Either set your DSN here or set the SENTRY_DSN environment variable.
+		Dsn: "https://f01bef9ca60042e8b44e95459230b78a@o1000763.ingest.sentry.io/6611205",
+		// Either set environment and release here or set the SENTRY_ENVIRONMENT
+		// and SENTRY_RELEASE environment variables.
+		Environment: "Acceptance",
+		// Enable printing of SDK debug messages.
+		// Useful when getting started or trying to figure something out.
+		Debug:            true,
+		TracesSampleRate: 1.0,
+	})
+	if err != nil {
+		s.logger.Fatalf("sentry.Init: %s", err)
+	}
+
 	md, err := s.getSnsSqsMetatdata(metadata)
 	if err != nil {
 		return err
@@ -857,18 +870,24 @@ func (s *snsSqs) Subscribe(subscribeCtx context.Context, req pubsub.SubscribeReq
 
 		// Remove the handler
 		delete(s.topicHandlers, sanitizedName)
-		s.logger.Debugf("Deleting topic %s of arn %s queue: %s", sanitizedName, subscriptionArn, queueInfo.arn)
+		s.logger.Errorf("Deleting topic %s of arn %s queue: %s", sanitizedName, subscriptionArn, queueInfo.arn)
 		// If we can perform management operations, remove the subscription entirely
 		if !s.metadata.disableEntityManagement {
 			// Use a background context because subscribeCtx is canceled already
 			// Error is logged already
-			//_ = s.removeSnsSqsSubscription(s.ctx, subscriptionArn)
+			_ = s.removeSnsSqsSubscription(s.ctx, subscriptionArn)
+
+			// Flush buffered events before the program terminates.
+			sentry.Flush(2 * time.Second)
+
+			sentry.CaptureMessage("Delete !")
 		}
 
 		// If we don't have any topic left, close the poller
 		if len(s.topicHandlers) == 0 {
 			s.pollerCancel()
 		}
+
 	}()
 
 	return nil
